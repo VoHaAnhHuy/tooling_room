@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: ecommerce_php
+    container_name: toolingroom_php
     volumes:
       - ./backend:/var/www/backend
     networks:
@@ -15,7 +15,7 @@ services:
   # Nginx Web Server
   web:
     image: nginx:alpine
-    container_name: ecommerce_nginx
+    container_name: toolingroom_nginx
     ports:
       - "8000:80"
     volumes:
@@ -29,9 +29,9 @@ services:
   # MySQL Database
   db:
     image: mysql:8.0
-    container_name: ecommerce_db
+    container_name: toolingroom_db
     environment:
-      MYSQL_DATABASE: ecommerce_db
+      MYSQL_DATABASE: toolingroom_db
       MYSQL_ROOT_PASSWORD: root_password
     ports:
       - "3306:3306"
@@ -43,7 +43,7 @@ services:
   # Node Container (Cho Frontend Vite)
   frontend:
     image: node:20-alpine
-    container_name: ecommerce_frontend
+    container_name: toolingroom_frontend
     working_dir: /app/frontend
     volumes:
       - ./frontend:/app/frontend
@@ -57,7 +57,7 @@ services:
   # phpMyAdmin Container
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: ecommerce_phpmyadmin
+    container_name: toolingroom_phpmyadmin
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
