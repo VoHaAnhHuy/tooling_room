@@ -26,7 +26,7 @@ class Product extends Model
             'product_collaterals',
             'product_id',
             'collateral_id'
-        )->withoutPivot();
+        );
     }
 
     public function tickets(): HasMany

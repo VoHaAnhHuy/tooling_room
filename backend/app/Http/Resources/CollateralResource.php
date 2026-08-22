@@ -17,7 +17,12 @@ class CollateralResource extends JsonResource
             'current_slot_id' => $this->current_slot_id,
             'type'            => new CollateralTypeResource($this->whenLoaded('type')),
             'current_slot'    => new CabinetSlotResource($this->whenLoaded('currentSlot')),
-            'products'        => ProductResource::collection($this->whenLoaded('products')),
+            // BelongsToMany cần dùng when() thay vì whenLoaded() trực tiếp
+            'products'        => $this->when(
+                $this->relationLoaded('products'),
+                fn() => ProductResource::collection($this->products)
+            ),
         ];
     }
 }
+

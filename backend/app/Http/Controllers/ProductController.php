@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Product\StoreProductRequest;
+use App\Http\Requests\Product\UpdateProductRequest;
+use App\Http\Resources\CollateralResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
@@ -11,18 +14,14 @@ class ProductController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $perPage = $request->integer('per_page', 20);
+        $perPage   = $request->integer('per_page', 20);
         $paginator = Product::paginate($perPage);
         return $this->paginated($paginator, ProductResource::collection($paginator));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'product_id'   => 'required|string|max:50|unique:products,product_id',
-            'product_name' => 'required|string|max:100',
-        ]);
-        $product = Product::create($validated);
+        $product = Product::create($request->validated());
         return $this->created(new ProductResource($product));
     }
 
@@ -33,14 +32,11 @@ class ProductController extends ApiController
         return $this->success(new ProductResource($product));
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateProductRequest $request, string $id): JsonResponse
     {
         $product = Product::find($id);
         if (!$product) return $this->notFound('Product not found');
-        $validated = $request->validate([
-            'product_name' => 'required|string|max:100',
-        ]);
-        $product->update($validated);
+        $product->update($request->validated());
         return $this->success(new ProductResource($product));
     }
 
@@ -56,8 +52,6 @@ class ProductController extends ApiController
     {
         $product = Product::with('collaterals.type')->find($id);
         if (!$product) return $this->notFound('Product not found');
-
-        // Dùng CollateralResource cho danh sách collaterals
-        return $this->success(\App\Http\Resources\CollateralResource::collection($product->collaterals));
+        return $this->success(CollateralResource::collection($product->collaterals));
     }
 }

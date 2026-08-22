@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CabinetSlot\StoreCabinetSlotRequest;
+use App\Http\Requests\CabinetSlot\UpdateCabinetSlotRequest;
 use App\Http\Resources\CabinetSlotResource;
 use App\Models\Cabinet;
 use App\Models\CabinetSlot;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CabinetSlotController extends ApiController
 {
@@ -22,18 +23,15 @@ class CabinetSlotController extends ApiController
         return $this->success(CabinetSlotResource::collection($slots));
     }
 
-    public function store(Request $request, string $cabinetId): JsonResponse
+    public function store(StoreCabinetSlotRequest $request, string $cabinetId): JsonResponse
     {
         $cabinet = Cabinet::find($cabinetId);
         if (!$cabinet) return $this->notFound('Cabinet not found');
 
-        $validated = $request->validate([
-            'slot_id'      => 'required|string|max:50|unique:cabinet_slots,slot_id',
-            'row_index'    => 'required|integer|min:0',
-            'column_index' => 'required|integer|min:0',
-        ]);
-        $validated['cabinet_id'] = $cabinetId;
-        $slot = CabinetSlot::create($validated);
+        $slot = CabinetSlot::create(array_merge($request->validated(), [
+            'cabinet_id' => $cabinetId,
+        ]));
+
         return $this->created(new CabinetSlotResource($slot));
     }
 
@@ -44,15 +42,11 @@ class CabinetSlotController extends ApiController
         return $this->success(new CabinetSlotResource($slot));
     }
 
-    public function update(Request $request, string $slotId): JsonResponse
+    public function update(UpdateCabinetSlotRequest $request, string $slotId): JsonResponse
     {
         $slot = CabinetSlot::find($slotId);
         if (!$slot) return $this->notFound('Slot not found');
-        $validated = $request->validate([
-            'row_index'    => 'sometimes|integer|min:0',
-            'column_index' => 'sometimes|integer|min:0',
-        ]);
-        $slot->update($validated);
+        $slot->update($request->validated());
         return $this->success(new CabinetSlotResource($slot));
     }
 

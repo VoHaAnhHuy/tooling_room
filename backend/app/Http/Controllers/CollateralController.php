@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Collateral\AssignSlotRequest;
+use App\Http\Requests\Collateral\StoreCollateralRequest;
+use App\Http\Requests\Collateral\UpdateCollateralRequest;
 use App\Http\Resources\CollateralResource;
 use App\Models\Collateral;
 use Illuminate\Http\JsonResponse;
@@ -12,8 +15,7 @@ class CollateralController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->integer('per_page', 20);
-
-        $query = Collateral::with(['type', 'currentSlot.cabinet']);
+        $query   = Collateral::with(['type', 'currentSlot.cabinet']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -29,17 +31,9 @@ class CollateralController extends ApiController
         return $this->paginated($paginator, CollateralResource::collection($paginator));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCollateralRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'collateral_id'   => 'required|string|max:50|unique:collaterals,collateral_id',
-            'type_id'         => 'required|integer|exists:collateral_types,type_id',
-            'name'            => 'required|string|max:150',
-            'location_status' => 'nullable|string|max:20',
-            'current_slot_id' => 'nullable|string|max:50|exists:cabinet_slots,slot_id',
-            'status'          => 'nullable|string|max:20',
-        ]);
-        $collateral = Collateral::create($validated);
+        $collateral = Collateral::create($request->validated());
         $collateral->load(['type', 'currentSlot']);
         return $this->created(new CollateralResource($collateral));
     }
@@ -51,18 +45,11 @@ class CollateralController extends ApiController
         return $this->success(new CollateralResource($collateral));
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateCollateralRequest $request, string $id): JsonResponse
     {
         $collateral = Collateral::find($id);
         if (!$collateral) return $this->notFound('Collateral not found');
-        $validated = $request->validate([
-            'type_id'         => 'sometimes|integer|exists:collateral_types,type_id',
-            'name'            => 'sometimes|string|max:150',
-            'location_status' => 'nullable|string|max:20',
-            'current_slot_id' => 'nullable|string|max:50|exists:cabinet_slots,slot_id',
-            'status'          => 'nullable|string|max:20',
-        ]);
-        $collateral->update($validated);
+        $collateral->update($request->validated());
         $collateral->load(['type', 'currentSlot']);
         return $this->success(new CollateralResource($collateral));
     }
@@ -75,16 +62,13 @@ class CollateralController extends ApiController
         return $this->noContent('Collateral deleted');
     }
 
-    public function assignSlot(Request $request, string $id): JsonResponse
+    public function assignSlot(AssignSlotRequest $request, string $id): JsonResponse
     {
         $collateral = Collateral::find($id);
         if (!$collateral) return $this->notFound('Collateral not found');
 
-        $validated = $request->validate([
-            'slot_id' => 'required|string|exists:cabinet_slots,slot_id',
-        ]);
         $collateral->update([
-            'current_slot_id' => $validated['slot_id'],
+            'current_slot_id' => $request->validated('slot_id'),
             'location_status' => 'in_cabinet',
         ]);
         $collateral->load(['currentSlot.cabinet', 'type']);

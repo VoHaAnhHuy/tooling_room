@@ -41,7 +41,7 @@ class Collateral extends Model
             'product_collaterals',
             'collateral_id',
             'product_id'
-        )->withoutPivot();
+        );
     }
 
     public function ticketItems(): HasMany

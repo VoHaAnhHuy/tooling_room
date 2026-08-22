@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,15 +15,9 @@ class AuthController extends ApiController
     /**
      * POST /api/auth/register
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        $user = User::create($validated);
+        $user  = User::create($request->validated());
         $token = $user->createToken('api-token')->plainTextToken;
 
         return $this->created([
@@ -33,16 +29,12 @@ class AuthController extends ApiController
     /**
      * POST /api/auth/login
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
+        $data = $request->validated();
+        $user = User::where('email', $data['email'])->first();
 
-        $user = User::where('email', $validated['email'])->first();
-
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user || !Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -60,7 +52,6 @@ class AuthController extends ApiController
 
     /**
      * POST /api/auth/logout
-     * Requires: auth:sanctum
      */
     public function logout(Request $request): JsonResponse
     {
@@ -70,7 +61,6 @@ class AuthController extends ApiController
 
     /**
      * GET /api/auth/me
-     * Requires: auth:sanctum
      */
     public function me(Request $request): JsonResponse
     {
