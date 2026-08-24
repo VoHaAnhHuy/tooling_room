@@ -5,10 +5,17 @@ import Pagination from '../components/ui/Pagination'
 import { statusBadge } from '../components/ui/Badge'
 import { LoadingSpinner, EmptyState } from '../components/ui/Shared'
 import { useAppToast } from '../components/layout/Layout'
-import { getCollaterals, createCollateral, updateCollateral, deleteCollateral, assignSlot, getTypes } from '../api/collaterals'
+import { getCollaterals, createCollateral, updateCollateral, deleteCollateral, assignSlot, getTypes, createType } from '../api/collaterals'
 import { getCabinets, getSlots } from '../api/cabinets'
 
 const BLANK = { collateral_id: '', type_id: '', name: '', status: 'available', location_status: '', current_slot_id: '' }
+
+const F = ({ label, req, children }) => (
+  <div className="form-group">
+    <label className="form-label">{label}{req && <span className="req"> *</span>}</label>
+    {children}
+  </div>
+)
 
 export default function Collaterals() {
   const toast = useAppToast()
@@ -27,6 +34,10 @@ export default function Collaterals() {
   const [slots, setSlots] = useState([])
   const [assignForm, setAssignForm] = useState({ cabinet_id: '', slot_id: '' })
   const [saving, setSaving] = useState(false)
+
+  // Type modal
+  const [typeModal, setTypeModal] = useState(false)
+  const [typeForm, setTypeForm] = useState({ type_name: '', description: '' })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -89,12 +100,22 @@ export default function Collaterals() {
     finally { setSaving(false) }
   }
 
-  const F = ({ label, req, children }) => (
-    <div className="form-group">
-      <label className="form-label">{label}{req && <span className="req"> *</span>}</label>
-      {children}
-    </div>
-  )
+  const handleAddType = async () => {
+    if (!typeForm.type_name.trim()) return toast.warn('Type name is required')
+    setSaving(true)
+    try {
+      const r = await createType(typeForm)
+      toast.success('Type created')
+      setTypeModal(false)
+      const res = await getTypes({ per_page: 100 })
+      setTypes(res.data.data ?? [])
+      // auto-select new type
+      setForm(p => ({ ...p, type_id: r.data.data.type_id }))
+      setTypeForm({ type_name: '', description: '' })
+    } catch (e) { toast.error(Object.values(e.response?.data?.errors ?? {}).flat()[0] || 'Error') }
+    finally { setSaving(false) }
+  }
+
 
   return (
     <div>
@@ -163,10 +184,13 @@ export default function Collaterals() {
         <F label="Name" req><input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Asset name" /></F>
         <div className="form-row">
           <F label="Type" req>
-            <select value={form.type_id} onChange={e => setForm(p => ({ ...p, type_id: e.target.value }))}>
-              <option value="">Select type</option>
-              {types.map(t => <option key={t.type_id} value={t.type_id}>{t.type_name}</option>)}
-            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <select style={{ flex: 1 }} value={form.type_id} onChange={e => setForm(p => ({ ...p, type_id: e.target.value }))}>
+                <option value="">Select type</option>
+                {types.map(t => <option key={t.type_id} value={t.type_id}>{t.type_name}</option>)}
+              </select>
+              <button type="button" className="btn btn-secondary" onClick={() => setTypeModal(true)}>+ New</button>
+            </div>
           </F>
           <F label="Status">
             <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
@@ -191,15 +215,28 @@ export default function Collaterals() {
         <F label="Slot">
           <select value={assignForm.slot_id} onChange={e => setAssignForm(p => ({ ...p, slot_id: e.target.value }))} disabled={!slots.length}>
             <option value="">Select slot</option>
-            {slots.map(s => <option key={s.slot_id} value={s.slot_id}>{s.slot_id} (Row {s.row_index}, Col {s.column_index})</option>)}
+            {slots.map(s => {
+              const isOccupied = !!s.current_collateral;
+              return (
+                <option key={s.slot_id} value={s.slot_id} disabled={isOccupied}>
+                  {s.slot_id} (Row {s.row_index}, Col {s.column_index}) {isOccupied ? '— Occupied' : ''}
+                </option>
+              )
+            })}
           </select>
         </F>
       </Modal>
 
-      {/* Delete Modal */}
       <Modal open={modal === 'delete'} onClose={() => setModal(null)} title="Delete Collateral" size="sm"
         footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Cancel</button><button className="btn btn-danger" disabled={saving} onClick={handleDelete}>{saving ? 'Deleting…' : 'Delete'}</button></>}>
         <p>Are you sure you want to delete <strong>{selected?.name}</strong>? This cannot be undone.</p>
+      </Modal>
+
+      {/* Create Type Modal */}
+      <Modal open={typeModal} onClose={() => setTypeModal(false)} title="New Collateral Type" size="sm"
+        footer={<><button className="btn btn-secondary" onClick={() => setTypeModal(false)}>Cancel</button><button className="btn btn-primary" disabled={saving} onClick={handleAddType}>{saving ? 'Saving…' : 'Save'}</button></>}>
+        <F label="Type Name" req><input value={typeForm.type_name} onChange={e => setTypeForm(p => ({ ...p, type_name: e.target.value }))} placeholder="e.g. Drill, Laptop..." /></F>
+        <F label="Description"><input value={typeForm.description} onChange={e => setTypeForm(p => ({ ...p, description: e.target.value }))} placeholder="Optional notes" /></F>
       </Modal>
     </div>
   )

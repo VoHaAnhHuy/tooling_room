@@ -7,6 +7,10 @@ import { useAppToast } from '../components/layout/Layout'
 import { getProducts, createProduct, updateProduct, deleteProduct, getProductCollaterals, attachCollateral, detachCollateral } from '../api/products'
 import { getCollaterals } from '../api/collaterals'
 
+const F = ({ label, req, children }) => (
+  <div className="form-group"><label className="form-label">{label}{req && <span className="req"> *</span>}</label>{children}</div>
+)
+
 export default function Products() {
   const toast = useAppToast()
   const [items, setItems] = useState([])
@@ -77,9 +81,6 @@ export default function Products() {
     finally { setSaving(false) }
   }
 
-  const F = ({ label, req, children }) => (
-    <div className="form-group"><label className="form-label">{label}{req && <span className="req"> *</span>}</label>{children}</div>
-  )
 
   const availableToAttach = allCollaterals.filter(c => !productCollaterals.find(pc => pc.collateral_id === c.collateral_id))
 

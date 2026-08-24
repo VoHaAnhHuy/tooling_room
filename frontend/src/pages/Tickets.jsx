@@ -12,6 +12,10 @@ import { getSlots } from '../api/cabinets'
 
 const BLANK_TICKET = { ticket_id: '', ticket_type: 'borrow', product_id: '', link_name: '', requester_name: '', issuer_name: '', status: 'pending' }
 
+const F = ({ label, req, children }) => (
+  <div className="form-group"><label className="form-label">{label}{req && <span className="req"> *</span>}</label>{children}</div>
+)
+
 export default function Tickets() {
   const toast = useAppToast()
   const [items, setItems] = useState([])
@@ -90,9 +94,6 @@ export default function Tickets() {
     finally { setSaving(false) }
   }
 
-  const F = ({ label, req, children }) => (
-    <div className="form-group"><label className="form-label">{label}{req && <span className="req"> *</span>}</label>{children}</div>
-  )
 
   return (
     <div>

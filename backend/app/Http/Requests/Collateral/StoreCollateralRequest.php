@@ -18,7 +18,10 @@ class StoreCollateralRequest extends FormRequest
             'type_id'         => ['required', 'integer', 'exists:collateral_types,type_id'],
             'name'            => ['required', 'string', 'max:150'],
             'location_status' => ['nullable', 'string', 'max:20'],
-            'current_slot_id' => ['nullable', 'string', 'max:50', 'exists:cabinet_slots,slot_id'],
+            'current_slot_id' => [
+                'nullable', 'string', 'max:50', 'exists:cabinet_slots,slot_id',
+                'unique:collaterals,current_slot_id'
+            ],
             'status'          => ['nullable', 'string', 'max:20'],
         ];
     }
